@@ -1,6 +1,6 @@
 {
   "name": "hubot-jenkins",
-  "description": "An example script package for Hubot",
+  "description": "Jenkins Integration for Hubot",
   "version": "1.0.0",
   "author": "Doug Cole",
   "license": "MIT",
