@@ -41,7 +41,8 @@ jenkinsBuildById = (msg) ->
 
 jenkinsBuild = (msg, buildWithEmptyParameters) ->
     url = process.env.HUBOT_JENKINS_URL
-    job = querystring.escape msg.match[1]
+    unescapedJob = msg.match[1]
+    job = querystring.escape unescapedJob
     params = msg.match[3]
     command = if buildWithEmptyParameters then "buildWithParameters" else "build"
     path = if params then "#{url}/job/#{job}/buildWithParameters?#{params}" else "#{url}/job/#{job}/#{command}"
@@ -57,7 +58,7 @@ jenkinsBuild = (msg, buildWithEmptyParameters) ->
         if err
           msg.reply "Jenkins says: #{err}"
         else if 200 <= res.statusCode < 400 # Or, not an error code.
-          msg.reply "(#{res.statusCode}) Build started for #{job} #{url}/job/#{job}"
+          msg.reply "(#{res.statusCode}) Build started for #{unescapedJob} #{url}/job/#{job}"
         else if 400 == res.statusCode
           jenkinsBuild(msg, true)
         else
@@ -188,13 +189,15 @@ jenkinsList = (msg) ->
         else
           try
             content = JSON.parse(body)
-            for job in content.jobs
-              # Add the job to the jobList
-              index = jobList.indexOf(job.name)
-              if index == -1
-                jobList.push(job.name)
-                index = jobList.indexOf(job.name)
+            for jobFromServer in content.jobs
+              # Add new jobs to the jobList
+              jobList.push(jobFromServer.name) if jobList.indexOf(jobFromServer.name) is -1
 
+            content.jobs.sort (a, b) ->
+              aIndex = jobList.indexOf a.name
+              bIndex = jobList.indexOf b.name
+              aIndex - bIndex
+            .forEach (job, index) ->
               state = if job.color == "red" then "FAIL" else "PASS"
               if filter.test job.name
                 response += "[#{index + 1}] #{state} #{job.name}\n"
